@@ -18,6 +18,8 @@ app.use("/uploads", express.static("uploads"));
 
 //userRoutes and productRoutes
 app.use("/api/auth", require('./routes/authRoute'));
+app.use("/api", require('./routes/userRoute'));
+
 
 app.get("/",(req,res) =>{
     res.json({message: "Welcome to the Home Page"});
