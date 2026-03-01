@@ -10,9 +10,9 @@ const Register = sequelize.define(
             primaryKey: true
         },
         role: {
-            type: DataTypes.ENUM("individual", "organization"),
+            type: DataTypes.ENUM("student", "teacher"),
             allowNull: false,
-            defaultValue: "individual"
+            defaultValue: "student"
         },
         username: {
             type: DataTypes.STRING,
@@ -46,7 +46,7 @@ const Register = sequelize.define(
         verificationTokenExpires: {
             type: DataTypes.DATE,
             allowNull: true
-        }
+        },
     },
     {
         timestamps: true,
