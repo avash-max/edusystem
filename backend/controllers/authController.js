@@ -19,7 +19,9 @@ const verifyToken = () =>{
 //user registeration
 const registerUser = async(req, res) =>{
 
-    const{username, email, password, info } = req.body;
+    const{username, email, password, info, role} = req.body;
+
+    console.log("Received registration data:", { username, email, password, info, role });
 
     if(!username || !email || !password || !info){
         return res.status(400).json({
@@ -46,6 +48,7 @@ const registerUser = async(req, res) =>{
         info,
         username,
         email,
+        role,
         password : hashedPassword,
         verificationToken,
         verificationTokenExpires
