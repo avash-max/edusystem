@@ -21,10 +21,23 @@ const Assignment = sequelize.define(
             type: DataTypes.DATEONLY,
             allowNull: false
         },
-        status: {
-            type: DataTypes.ENUM("pending", "completed", "overdue"),
-            allowNull: false,
-            defaultValue: "pending"
+
+        // --- New file fields ---
+        file_name: {
+            type: DataTypes.STRING,
+            allowNull: true  // original file name shown to user
+        },
+        file_path: {
+            type: DataTypes.STRING,
+            allowNull: true  // stored filename on disk
+        },
+        file_size: {
+            type: DataTypes.INTEGER,
+            allowNull: true  // bytes
+        },
+        file_type: {
+            type: DataTypes.STRING,
+            allowNull: true  // mimetype
         }
     },
     {
