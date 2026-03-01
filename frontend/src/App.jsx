@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Sidebar from './components/sidebar';
 import { Toaster } from 'react-hot-toast';
+import { StudentSidebar } from './components/StudentSidebar';
+import  {TeacherSidebar} from './components/TeacherSidebar';
 
 // Auth
 import Login from './pages/auth/Login';
@@ -17,44 +18,72 @@ import ResourcesDashboard from './pages/resources';
 // Teacher
 import TeacherDashboard from './pages/teacher/dashboard';
 import TeacherCourse from './pages/teacher/courses';
+import TeacherAssignment from './pages/teacher/Assignments';
+import TeacherResources from './pages/teacher/Resources';
+import TeacherSubmission from './pages/teacher/Submission';
+import { getUserRole } from './protected/authRole';
+
+
+// --- Read from localStorage so it survives refresh ---
+const userRole = getUserRole();
+
+console.log('User Role:', userRole);
+
+function AppLayout() {
+  if (!userRole) {
+    return (
+      <main className="flex-1">
+        <Routes>
+          <Route path="/login"    element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*"         element={<Navigate to="/login" />} />
+        </Routes>
+      </main>
+    );
+  }
+
+  if (userRole === 'teacher') {
+    return (
+      <>
+        <TeacherSidebar />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/"             element={<TeacherDashboard />} />
+            <Route path="/courses"     element={<TeacherCourse />} />
+            <Route path="/assignments" element={<TeacherAssignment />} />
+            <Route path="/assignments/:id" element={<TeacherSubmission />} />
+            <Route path="/resources" element={<TeacherResources />} />
+            {/* <Route path="*"                    element={<Navigate to="/teacher" replace />} /> */}
+          </Routes>
+        </main>
+      </>
+    );
+  }
+
+  // Student
+  return (
+    <>
+      <StudentSidebar />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/"            element={<EduLearnDashboard />} />
+          <Route path="/courses"     element={<CoursesDashboard />} />
+          <Route path="/assignments" element={<AssignmentsDashboard />} />
+          <Route path="/resources"   element={<ResourcesDashboard />} />
+          <Route path="*"            element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </>
+  );
+}
 
 export default function App() {
-  // Simple toggle for demo purposes
-  const isLoggedIn = true; 
-  const userRole = 'student'; // or 'teacher'
-
   return (
-      <>
-      <Toaster
-        position="top-right"
-      />
+    <>
+      <Toaster position="top-right" />
       <Router>
         <div className="flex min-h-screen bg-slate-50">
-          {/* Only show Sidebar if logged in */}
-          {isLoggedIn && <Sidebar role={userRole} />}
-
-          <main className={isLoggedIn ? "flex-1 ml-20 md:ml-72 p-4" : "flex-1"}>
-            <Routes>
-              {/* Auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-
-              {/* Student Routes */}
-              <Route path="/" element={<EduLearnDashboard />} />
-              <Route path="/courses" element={<CoursesDashboard />} />
-              <Route path="/grades" element={<GradesDashboard />} />
-              <Route path="/assignments" element={<AssignmentsDashboard />} />
-              <Route path="/calendar" element={<CalenderDashboard />} />
-              <Route path="/resources" element={<ResourcesDashboard />} />
-
-              {/* Teacher Routes */}
-              <Route path="/teacher" element={<TeacherDashboard />} />
-              <Route path="/teacher/courses" element={<TeacherCourse />} />
-
-              {/* Redirect any unknown page to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
+          <AppLayout />
         </div>
       </Router>
     </>
