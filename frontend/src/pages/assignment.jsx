@@ -22,10 +22,10 @@ export default function AssignmentsDashboard() {
         await new Promise(res => setTimeout(res, 800));
         
         const mockData = [
-          { id: 1, title: 'Calculus Problem Set 5', course: 'Advanced Mathematics', dueDate: '2026-02-08', status: 'pending', priority: 'high', description: 'Complete problems 1-15 from Chapter 8.', attachments: ['problem_set_5.pdf'], icon: '📝' },
-          { id: 2, title: 'Lab Report: Reactions', course: 'Chemistry Lab', dueDate: '2026-02-10', status: 'in-progress', priority: 'medium', description: 'Write a comprehensive lab report on chemical reactions.', attachments: ['guidelines.pdf'], icon: '🧪' },
-          { id: 5, title: 'Research Paper Outline', course: 'Advanced Mathematics', dueDate: '2026-02-06', status: 'overdue', priority: 'high', description: 'Submit detailed thesis outline.', attachments: [], icon: '📝' },
-          { id: 7, title: 'Marketing Proposal', course: 'Digital Marketing', dueDate: '2026-02-20', status: 'completed', priority: 'low', description: 'Develop a digital campaign proposal.', attachments: ['template.pptx'], icon: '📢' }
+          { id: 1, title: 'Cloud computing', course: 'Computer architecture', dueDate: '2026-02-08', status: 'pending', priority: 'high', description: 'Complete problems 1-15 from Chapter 8.', attachments: ['problem_set_5.pdf'], icon: '📝' },
+          { id: 2, title: 'React and node js', course: 'Web Development', dueDate: '2026-02-10', status: 'in-progress', priority: 'medium', description: 'Write a comprehensive lab report on chemical reactions.', attachments: ['guidelines.pdf'], icon: '🧪' },
+          { id: 5, title: 'OOP', course: 'Java', dueDate: '2026-02-06', status: 'overdue', priority: 'high', description: 'Submit detailed thesis outline.', attachments: [], icon: '📝' },
+          { id: 7, title: 'Dynamic Programming', course: 'Programming for developers', dueDate: '2026-02-20', status: 'completed', priority: 'low', description: 'Develop a digital campaign proposal.', attachments: ['template.pptx'], icon: '📢' }
         ];
         setAssignments(mockData);
       } catch (err) {

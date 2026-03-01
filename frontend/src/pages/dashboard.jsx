@@ -35,7 +35,7 @@ export default function SimpleEduDashboard() {
         
         {/* Header */}
         <header className="mb-10">
-          <h1 className="text-3xl font-bold">{greeting}, John 👋</h1>
+          <h1 className="text-3xl font-bold">{greeting}, Avash 👋</h1>
           <p className="text-slate-500">You have {tasks.length} tasks due soon.</p>
         </header>
 
