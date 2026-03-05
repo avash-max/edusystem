@@ -1,333 +1,370 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, BookOpen, Users, 
-  Trash2, Edit, X, Loader2
+import React, { useState } from 'react';
+import {
+  Plus, Search, BookOpen, Users, Trash2, Edit, X,
+  Loader2, Grid, List, Clock
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { 
-  addCourse, 
-  getAllCourses, 
-  updateCourse, 
-  removeCourse 
-} from '../../services/api';
 
-const COLOR_OPTIONS = ['blue', 'orange', 'purple', 'green', 'red', 'pink'];
+// ─── Mock data (replace with your API calls) ─────────────────────────────────
+const MOCK_COURSES = [
+  { course_id: 1, title: 'Organic Chemistry', code: 'CHM_101', students: 56, assignments: 8, color: '#6366f1', status: 'active', completion: 72, lastUpdated: '2 days ago' },
+  { course_id: 2, title: 'Advanced Mathematics', code: 'MTH_301', students: 34, assignments: 12, color: '#0ea5e9', status: 'active', completion: 45, lastUpdated: '1 hour ago' },
+  { course_id: 3, title: 'World Literature', code: 'ENG_202', students: 88, assignments: 5, color: '#f59e0b', status: 'draft', completion: 90, lastUpdated: '5 days ago' },
+  { course_id: 4, title: 'Intro to Physics', code: 'PHY_101', students: 61, assignments: 9, color: '#10b981', status: 'active', completion: 33, lastUpdated: '3 days ago' },
+  { course_id: 5, title: 'Data Structures', code: 'CS_301', students: 45, assignments: 15, color: '#8b5cf6', status: 'active', completion: 58, lastUpdated: '12 hours ago' },
+];
 
-const colorMap = {
-  blue:   'bg-blue-500',
-  orange: 'bg-orange-500',
-  purple: 'bg-purple-500',
-  green:  'bg-emerald-500',
-  red:    'bg-red-500',
-  pink:   'bg-pink-500',
+const COLOR_PRESETS = ['#6366f1','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#f43f5e','#64748b','#14b8a6'];
+
+const statusConfig = {
+  active:   { label: 'Active',   dot: 'bg-emerald-400', text: 'text-emerald-700', bg: 'bg-emerald-50' },
+  draft:    { label: 'Draft',    dot: 'bg-amber-400',   text: 'text-amber-700',   bg: 'bg-amber-50' },
+  archived: { label: 'Archived', dot: 'bg-slate-300',   text: 'text-slate-500',   bg: 'bg-slate-100' },
 };
 
-const colorRingMap = {
-  blue:   'ring-blue-400',
-  orange: 'ring-orange-400',
-  purple: 'ring-purple-400',
-  green:  'ring-emerald-400',
-  red:    'ring-red-400',
-  pink:   'ring-pink-400',
-};
+const inputCls = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200 text-sm font-medium transition-all";
 
 export default function TeacherCourses() {
-  const [courses, setCourses]       = useState([]);
-  const [isLoading, setIsLoading]   = useState(true);
+  const [courses, setCourses]       = useState(MOCK_COURSES);
+  const [search, setSearch]         = useState('');
+  const [viewMode, setViewMode]     = useState('grid');
+  const [filterStatus, setFilter]   = useState('all');
+  const [showAdd, setShowAdd]       = useState(false);
+  const [editData, setEditData]     = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showModal, setShowModal]   = useState(false);
-  const [editModal, setEditModal]   = useState(false);
-  const [selected, setSelected]     = useState(null);
+  const [toast, setToast]           = useState(null);
 
-  const [newCourse, setNewCourse] = useState({ title: '', code: '', students: '', color: 'blue' });
-  const [editForm, setEditForm]   = useState({ title: '', code: '', students: '', color: 'blue' });
+  const emptyForm = { title: '', code: '', students: '', color: '#6366f1', status: 'active' };
+  const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { fetchCourses(); }, []);
-
-  const fetchCourses = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await getAllCourses();
-      setCourses(data.courses);
-    } catch {
-      toast.error('Failed to load courses.');
-    } finally {
-      setIsLoading(false);
-    }
+  const notify = (msg, type = 'ok') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2800);
   };
 
-  const handleAddCourse = async (e) => {
+  const filtered = courses
+    .filter(c => filterStatus === 'all' || c.status === filterStatus)
+    .filter(c =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.code.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const totalStudents = courses.reduce((s, c) => s + c.students, 0);
+  const activeCourses = courses.filter(c => c.status === 'active').length;
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      const { data } = await addCourse({
-        title:    newCourse.title,
-        code:     newCourse.code,
-        students: Number(newCourse.students),
-        color:    newCourse.color
-      });
-      setCourses(prev => [data.course, ...prev]);
-      setShowModal(false);
-      setNewCourse({ title: '', code: '', students: '', color: 'blue' });
-      toast.success('Course created!');
-    } catch (err) {
-      const msg = err?.response?.data?.message || 'Failed to create course.';
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    await new Promise(r => setTimeout(r, 700));
+    setCourses(prev => [{
+      ...form,
+      course_id: Date.now(),
+      students: Number(form.students),
+      assignments: 0,
+      completion: 0,
+      lastUpdated: 'Just now',
+    }, ...prev]);
+    setShowAdd(false);
+    setForm(emptyForm);
+    setSubmitting(false);
+    notify('Course created!');
   };
 
-  const handleEditClick = (course) => {
-    setSelected(course);
-    setEditForm({
-      title:    course.title,
-      code:     course.code,
-      students: course.students,
-      color:    course.color
-    });
-    setEditModal(true);
-  };
-
-  const handleUpdateCourse = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      const { data } = await updateCourse(selected.course_id, {
-        title:    editForm.title,
-        code:     editForm.code,
-        students: Number(editForm.students),
-        color:    editForm.color
-      });
-      setCourses(prev => prev.map(c => c.course_id === selected.course_id ? data.course : c));
-      setEditModal(false);
-      setSelected(null);
-      toast.success('Course updated!');
-    } catch (err) {
-      const msg = err?.response?.data?.message || 'Failed to update course.';
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    await new Promise(r => setTimeout(r, 600));
+    setCourses(prev => prev.map(c =>
+      c.course_id === editData.course_id
+        ? { ...c, ...form, students: Number(form.students) }
+        : c
+    ));
+    setEditData(null);
+    setSubmitting(false);
+    notify('Changes saved!');
+  };
+
+  const openEdit = (course) => {
+    setForm({ title: course.title, code: course.code, students: course.students, color: course.color, status: course.status });
+    setEditData(course);
   };
 
   const handleDelete = (id) => {
-    toast((t) => (
-      <div className="flex flex-col gap-3">
-        <p className="font-semibold text-slate-800 text-sm">Delete this course?</p>
-        <div className="flex gap-2">
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              try {
-                await removeCourse(id);
-                setCourses(prev => prev.filter(c => c.course_id !== id));
-                toast.success('Course deleted.');
-              } catch {
-                toast.error('Failed to delete course.');
-              }
-            }}
-            className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700"
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    ), { duration: 8000 });
+    setCourses(prev => prev.filter(c => c.course_id !== id));
+    notify('Course removed.', 'err');
   };
 
-  const filteredCourses = courses.filter(c =>
-    c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="max-w-7xl mx-auto p-6 lg:p-10">
+    <div className="min-h-screen bg-[#F7F8FA]">
 
-        {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-[200] flex items-center gap-2.5 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold transition-all
+          ${toast.type === 'ok' ? 'bg-slate-900 text-white' : 'bg-red-500 text-white'}`}>
+          <span className={`w-2 h-2 rounded-full ${toast.type === 'ok' ? 'bg-emerald-400' : 'bg-white'}`} />
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto px-6 py-10">
+
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Management</h1>
-            <p className="text-slate-500 font-medium mt-1">
-              {courses.length} course{courses.length !== 1 ? 's' : ''} · Create and organize your curriculum
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Courses</h1>
+            <p className="text-slate-400 text-sm font-medium mt-1">
+              {activeCourses} active &middot; {totalStudents} students enrolled
             </p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 active:scale-95"
+            onClick={() => { setForm(emptyForm); setShowAdd(true); }}
+            className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
           >
-            <Plus className="w-5 h-5" /> Create New Course
+            <Plus className="w-4 h-4" /> New Course
           </button>
-        </header>
-
-        {/* Search */}
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by name or code..."
-            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-slate-900/5 transition-all shadow-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
         </div>
 
-        {/* Grid */}
-        {filteredCourses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-            <BookOpen className="w-12 h-12 mb-4 opacity-30" />
-            <p className="font-bold text-lg">No courses found</p>
+        {/* ── Toolbar ── */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-7">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-slate-200 shadow-sm"
+            />
+          </div>
+
+          <select
+            value={filterStatus}
+            onChange={e => setFilter(e.target.value)}
+            className="px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-600 outline-none shadow-sm cursor-pointer"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          <div className="flex bg-white border border-slate-200 rounded-2xl p-1 gap-1 shadow-sm">
+            <button onClick={() => setViewMode('grid')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+              <Grid className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewMode('list')} className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Empty State ── */}
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-28 text-slate-300">
+            <BookOpen className="w-12 h-12 mb-3" />
+            <p className="font-bold text-slate-400 text-lg">No courses found</p>
             <p className="text-sm mt-1">Try a different search or create a new course</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map(course => (
-              <div key={course.course_id} className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:shadow-xl transition-all group relative">
-                
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xl ${colorMap[course.color] || 'bg-blue-500'} shadow-lg`}>
-                    {course.title.charAt(0)}
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEditClick(course)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(course.course_id)}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+        )}
 
-                <h3 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{course.title}</h3>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">{course.code}</p>
-
-                <div className="grid grid-cols-2 gap-4 pt-5 border-t border-slate-50">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm font-bold">{course.students} Students</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <BookOpen className="w-4 h-4" />
-                    <span className="text-sm font-bold">{course.assignments} Tasks</span>
-                  </div>
-                </div>
-              </div>
+        {/* ── Grid ── */}
+        {viewMode === 'grid' && filtered.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map(course => (
+              <GridCard key={course.course_id} course={course} onEdit={openEdit} onDelete={handleDelete} />
             ))}
           </div>
         )}
 
-        {/* Add Modal */}
-        {showModal && (
-          <Modal title="New Course" onClose={() => setShowModal(false)}>
-            <form onSubmit={handleAddCourse} className="space-y-4">
-              <FormField label="Course Name">
-                <input
-                  required type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  placeholder="e.g. Organic Chemistry"
-                  value={newCourse.title}
-                  onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Course Code">
-                <input
-                  required type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  placeholder="e.g. CHM_101"
-                  value={newCourse.code}
-                  onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value.toUpperCase() })}
-                />
-              </FormField>
-              <FormField label="Initial Student Count">
-                <input
-                  required type="number" min="0"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  placeholder="0"
-                  value={newCourse.students}
-                  onChange={(e) => setNewCourse({ ...newCourse, students: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Color">
-                <ColorPicker value={newCourse.color} onChange={(c) => setNewCourse({ ...newCourse, color: c })} />
-              </FormField>
-              <SubmitButton loading={submitting} label="Create Course" />
-            </form>
-          </Modal>
+        {/* ── List ── */}
+        {viewMode === 'list' && filtered.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {filtered.map(course => (
+              <ListRow key={course.course_id} course={course} onEdit={openEdit} onDelete={handleDelete} />
+            ))}
+          </div>
         )}
+      </div>
 
-        {/* Edit Modal */}
-        {editModal && (
-          <Modal title="Edit Course" onClose={() => setEditModal(false)}>
-            <form onSubmit={handleUpdateCourse} className="space-y-4">
-              <FormField label="Course Name">
-                <input
-                  required type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Course Code">
-                <input
-                  required type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  value={editForm.code}
-                  onChange={(e) => setEditForm({ ...editForm, code: e.target.value.toUpperCase() })}
-                />
-              </FormField>
-              <FormField label="Student Count">
-                <input
-                  required type="number" min="0"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-900 transition-all"
-                  value={editForm.students}
-                  onChange={(e) => setEditForm({ ...editForm, students: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Color">
-                <ColorPicker value={editForm.color} onChange={(c) => setEditForm({ ...editForm, color: c })} />
-              </FormField>
-              <SubmitButton loading={submitting} label="Save Changes" />
-            </form>
-          </Modal>
-        )}
+      {/* ── Add / Edit Modal ── */}
+      {(showAdd || editData) && (
+        <Modal
+          title={editData ? 'Edit Course' : 'New Course'}
+          onClose={() => { setShowAdd(false); setEditData(null); }}
+        >
+          <form onSubmit={editData ? handleUpdate : handleAdd} className="space-y-4">
+            <Field label="Course Name">
+              <input required type="text" className={inputCls} placeholder="e.g. Organic Chemistry"
+                value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+            </Field>
 
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Course Code">
+                <input required type="text" className={inputCls} placeholder="CHM_101"
+                  value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} />
+              </Field>
+              <Field label="Students">
+                <input required type="number" min="0" className={inputCls} placeholder="0"
+                  value={form.students} onChange={e => setForm({ ...form, students: e.target.value })} />
+              </Field>
+            </div>
+
+            <Field label="Status">
+              <select className={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+              </select>
+            </Field>
+
+            <Field label="Card Color">
+              <div className="flex gap-2.5 flex-wrap mt-1">
+                {COLOR_PRESETS.map(c => (
+                  <button key={c} type="button" onClick={() => setForm({ ...form, color: c })}
+                    className={`w-7 h-7 rounded-full transition-all hover:scale-110 ${form.color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : ''}`}
+                    style={{ background: c }}
+                  />
+                ))}
+              </div>
+            </Field>
+
+            <button type="submit" disabled={submitting}
+              className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold mt-1 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitting ? 'Saving...' : editData ? 'Save Changes' : 'Create Course'}
+            </button>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── Grid Card ───────────────────────────────────────────────────────────────
+function GridCard({ course, onEdit, onDelete }) {
+  const sc = statusConfig[course.status] || statusConfig.active;
+
+  return (
+    <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden">
+      <div className="h-1 w-full" style={{ background: course.color }} />
+
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm"
+            style={{ background: course.color }}
+          >
+            {course.title.charAt(0)}
+          </div>
+          <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+            {sc.label}
+          </span>
+        </div>
+
+        <h3 className="font-bold text-slate-900 text-base leading-snug mb-0.5">{course.title}</h3>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{course.code}</p>
+
+        {/* Completion bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-slate-400 font-semibold mb-1.5">
+            <span>Progress</span>
+            <span>{course.completion}%</span>
+          </div>
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${course.completion}%`, background: course.color }} />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center gap-4 pt-4 border-t border-slate-50">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <Users className="w-3.5 h-3.5 text-slate-300" /> {course.students}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <BookOpen className="w-3.5 h-3.5 text-slate-300" /> {course.assignments} tasks
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-slate-300 font-medium ml-auto">
+            <Clock className="w-3 h-3" /> {course.lastUpdated}
+          </span>
+        </div>
+
+        {/* Hover actions */}
+        <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 -translate-y-1 group-hover:translate-y-0 transition-all">
+          <button
+            onClick={() => onEdit(course)}
+            className="flex-1 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center gap-1"
+          >
+            <Edit className="w-3.5 h-3.5" /> Edit
+          </button>
+          <button
+            onClick={() => onDelete(course.course_id)}
+            className="py-2 px-3.5 text-xs font-bold rounded-xl bg-red-50 text-red-400 hover:bg-red-100 transition-all"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// --- Sub-components ---
+// ─── List Row ────────────────────────────────────────────────────────────────
+function ListRow({ course, onEdit, onDelete }) {
+  const sc = statusConfig[course.status] || statusConfig.active;
 
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 px-5 py-4 group">
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-base shrink-0"
+        style={{ background: course.color }}
+      >
+        {course.title.charAt(0)}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-slate-900 text-sm">{course.title}</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{course.code}</span>
+          <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />{sc.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 mt-1">
+          <span className="text-xs text-slate-400 font-medium flex items-center gap-1"><Users className="w-3 h-3" />{course.students}</span>
+          <span className="text-xs text-slate-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.assignments} tasks</span>
+        </div>
+      </div>
+
+      {/* Progress mini */}
+      <div className="hidden sm:flex flex-col items-end gap-1 w-20 shrink-0">
+        <span className="text-xs font-bold text-slate-500">{course.completion}%</span>
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${course.completion}%`, background: course.color }} />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+        <button onClick={() => onEdit(course)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+          <Edit className="w-4 h-4" />
+        </button>
+        <button onClick={() => onDelete(course.course_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-[2rem] w-full max-w-md p-7 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+          <h2 className="text-xl font-black text-slate-900">{title}</h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <X className="w-6 h-6 text-slate-400" />
+            <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
         {children}
@@ -336,39 +373,11 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-function FormField({ label, children }) {
+function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-black text-slate-400 uppercase mb-2">{label}</label>
+      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>
       {children}
     </div>
-  );
-}
-
-function ColorPicker({ value, onChange }) {
-  return (
-    <div className="flex gap-3 flex-wrap">
-      {COLOR_OPTIONS.map(c => (
-        <button
-          key={c} type="button"
-          onClick={() => onChange(c)}
-          className={`w-8 h-8 rounded-full ${colorMap[c]} transition-all
-            ${value === c ? `ring-2 ring-offset-2 ${colorRingMap[c]} scale-110` : 'hover:scale-105'}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SubmitButton({ loading, label }) {
-  return (
-    <button
-      type="submit"
-      disabled={loading}
-      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold mt-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-    >
-      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-      {loading ? 'Please wait...' : label}
-    </button>
   );
 }

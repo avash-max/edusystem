@@ -1,42 +1,45 @@
-const multer = require("multer");
-const path = require("path");
+const multer  = require("multer");
+const path    = require("path");
+const { v4: uuidv4 } = require("uuid");
+const fs      = require("fs");
+
+// Make sure uploads folder exists
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
-    destination : (req, file, callback) =>{
-        const uploadPath = path.join(__dirname, '..', 'uploads');
-        callback(null, uploadPath)
-    }, 
-    filename : (req, file, callback)=>{
-        const uniqueSuffix = Date.now()+ '-' + Math.round(Math.random()*1E9);
-        callback(null, uniqueSuffix + path.extname(file.originalname));
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const ext      = path.extname(file.originalname);
+        const filename = `${uuidv4()}${ext}`;
+        cb(null, filename);
     }
-})
+});
 
-const fileFilter = (req, file, callback) =>{
-    if(!file.originalname.match(/\.(jpg|jpeg|png|webp)$/i)){
-        return callback(new Error("Only image files are allowed"), false);
+const fileFilter = (req, file, cb) => {
+    const allowed = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "image/jpeg",
+        "image/png",
+        "text/plain"
+    ];
+    if (allowed.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("File type not allowed. Use PDF, DOC, DOCX, PPT, PPTX, JPG, PNG, or TXT."), false);
     }
-    callback(null, true);
 };
 
-const uploadImage = (req, res, next) =>{
-    const upload = multer ({
-        storage, 
-        fileFilter,
-        limits : { fileSize : 5 * 1024 * 1024}
-    }).fields([
-        { name: "thumbnail", maxCount: 1 },   // single image
-        { name: "images", maxCount: 10 },      // multiple images
-    ]);
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
-    upload(req, res, (err) =>{
-        if(err){
-            return res.status(400).json({ error: err.message });
-        }
-        next();
-    });
-};
-
-
-module.exports = uploadImage;
-
+module.exports = upload;

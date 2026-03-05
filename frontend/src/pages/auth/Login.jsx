@@ -18,7 +18,6 @@ export default function Login() {
 
     try {
       // The API call now only sends credentials. 
-      // The backend should return the user's role (e.g., response.data.role)
       const response = await loginUserApi({ email, password });
 
       if (response.data.success) {
